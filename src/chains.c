@@ -21,6 +21,7 @@
 
 #include <linux/kernel.h>
 #include <linux/module.h>
+#include <linux/types.h>
 #include <linux/ip.h>
 #include <linux/icmp.h>
 #include <linux/tcp.h>
@@ -109,9 +110,9 @@ enum simplepf_action simplepf_traverse_chain(enum simplepf_chain_id chain_id,
 	 */
 	if (chain_id == SIMPLEPF_CHAIN_INPUT) {
 		struct iphdr *ip_header;
-		u8 addr[4];
-		const char *end;
 		int in4_pton_ret;
+		const char *end;
+		u8 addr[4];
 
 		ip_header = ip_hdr(skb);
 
@@ -155,6 +156,9 @@ enum simplepf_action simplepf_traverse_chain(enum simplepf_chain_id chain_id,
 		}
 	} else /* if (chain_id == SIMPLEPF_CHAIN_OUTPUT) */ {
 		struct iphdr *ip_header;
+		int in4_pton_ret;
+		const char *end;
+		u8 addr[4];
 
 		ip_header = ip_hdr(skb);
 		/*
@@ -163,6 +167,37 @@ enum simplepf_action simplepf_traverse_chain(enum simplepf_chain_id chain_id,
 		if (ip_header->protocol == IPPROTO_ICMP) {
 			printk(KERN_INFO "simplepf: ICMP output dropped\n");
 			return SIMPLEPF_ACTION_DROP;
+		}
+
+		/*
+		 * XXX: IP address is hardcoded here.
+		 * It will most likely change on a reboot.
+		 */
+		in4_pton_ret = in4_pton("192.168.122.122", -1, addr, -1, &end);
+
+		if (in4_pton_ret == 0) {
+			printk(KERN_DEBUG "simplepf: in4_pton() returned %d. "
+					"This may be a bug.\n", in4_pton_ret);
+			return default_actions[chain_id];
+		}
+
+		/*
+		 * Prevent A from doing a telnet to Machine B.
+		 */
+
+		if (memcmp(&ip_header->daddr, addr, 4) != 0) {
+			return default_actions[chain_id];
+		}
+
+		if (ip_header->protocol == IPPROTO_TCP) {
+			struct tcphdr *tcp_header;
+
+			tcp_header = tcp_hdr(skb);
+
+			if (tcp_header->dest == htons(23)) {
+				printk(KERN_INFO "simplepf: telnet output dropped\n");
+				return SIMPLEPF_ACTION_DROP;
+			}
 		}
 	}
 
