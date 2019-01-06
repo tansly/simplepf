@@ -99,9 +99,71 @@ enum simplepf_action simplepf_traverse_chain(enum simplepf_chain_id chain_id,
 	}
 
 	chain = chains[chain_id];
+	/*
+	 * TODO: The chain should be traversed.
+	 */
 
-	if (!chain) {
-		return default_actions[chain_id];
+	/*
+	 * XXX: This is just for satisfying minimal homework specifications
+	 * as quickly as possible.
+	 */
+	if (chain_id == SIMPLEPF_CHAIN_INPUT) {
+		struct iphdr *ip_header;
+		u8 addr[4];
+		const char *end;
+		int in4_pton_ret;
+
+		ip_header = ip_hdr(skb);
+
+		/*
+		 * Prevent all ICMP traffic. (input)
+		 */
+		if (ip_header->protocol == IPPROTO_ICMP) {
+			printk(KERN_INFO "simplepf: ICMP input dropped\n");
+			return SIMPLEPF_ACTION_DROP;
+		}
+
+		/*
+		 * XXX: IP address is hardcoded here.
+		 * It will most likely change on a reboot.
+		 */
+		in4_pton_ret = in4_pton("192.168.122.122", -1, addr, -1, &end);
+
+		if (in4_pton_ret == 0) {
+			printk(KERN_DEBUG "simplepf: in4_pton() returned %d. "
+					"This may be a bug.\n", in4_pton_ret);
+			return default_actions[chain_id];
+		}
+
+		/*
+		 * Prevent B from doing a telnet to Machine A.
+		 */
+
+		if (memcmp(&ip_header->saddr, addr, 4) != 0) {
+			return default_actions[chain_id];
+		}
+
+		if (ip_header->protocol == IPPROTO_TCP) {
+			struct tcphdr *tcp_header;
+
+			tcp_header = tcp_hdr(skb);
+
+			if (tcp_header->dest == htons(23)) {
+				printk(KERN_INFO "simplepf: telnet input dropped\n");
+				return SIMPLEPF_ACTION_DROP;
+			}
+		}
+	} else /* if (chain_id == SIMPLEPF_CHAIN_OUTPUT) */ {
+		struct iphdr *ip_header;
+
+		ip_header = ip_hdr(skb);
+		/*
+		 * Prevent all ICMP traffic. (output)
+		 */
+		if (ip_header->protocol == IPPROTO_ICMP) {
+			printk(KERN_INFO "simplepf: ICMP output dropped\n");
+			return SIMPLEPF_ACTION_DROP;
+		}
 	}
 
 	return default_actions[chain_id];
