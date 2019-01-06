@@ -21,22 +21,22 @@
 #include <linux/netfilter.h>
 #include <linux/netfilter_ipv4.h>
 
-static unsigned int simplepf_hook_local_in(void *priv,
+static unsigned int hook_local_in(void *priv,
 		struct sk_buff *skb,
 		const struct nf_hook_state *state)
 {
 	return NF_DROP;
 }
 
-static unsigned int simplepf_hook_local_out(void *priv,
+static unsigned int hook_local_out(void *priv,
 		struct sk_buff *skb,
 		const struct nf_hook_state *state)
 {
 	return NF_DROP;
 }
 
-static struct nf_hook_ops simplepf_ops_local_in = {
-	.hook = simplepf_hook_local_in,
+static struct nf_hook_ops ops_local_in = {
+	.hook = hook_local_in,
 	/* struct net_device *dev, TODO: for what? */
 	/* void *priv, unused */
 	.pf = PF_INET,
@@ -44,8 +44,8 @@ static struct nf_hook_ops simplepf_ops_local_in = {
 	.priority = NF_IP_PRI_FIRST
 };
 
-static struct nf_hook_ops simplepf_ops_local_out = {
-	.hook = simplepf_hook_local_out,
+static struct nf_hook_ops ops_local_out = {
+	.hook = hook_local_out,
 	/* struct net_device *dev, TODO: for what? */
 	/* void *priv, unused */
 	.pf = PF_INET,
@@ -57,26 +57,26 @@ static int __init simplepf_init(void)
 {
 	int err;
 
-	err = nf_register_net_hook(&init_net, &simplepf_ops_local_in);
+	err = nf_register_net_hook(&init_net, &ops_local_in);
 	if (err)
 		goto register_in_fail;
 
-	err = nf_register_net_hook(&init_net, &simplepf_ops_local_out);
+	err = nf_register_net_hook(&init_net, &ops_local_out);
 	if (err)
 		goto register_out_fail;
 
 	return 0;
 
 register_out_fail:
-	nf_unregister_net_hook(&init_net, &simplepf_ops_local_in);
+	nf_unregister_net_hook(&init_net, &ops_local_in);
 register_in_fail:
 	return err;
 }
 
 static void __exit simplepf_exit(void)
 {
-	nf_unregister_net_hook(&init_net, &simplepf_ops_local_in);
-	nf_unregister_net_hook(&init_net, &simplepf_ops_local_out);
+	nf_unregister_net_hook(&init_net, &ops_local_in);
+	nf_unregister_net_hook(&init_net, &ops_local_out);
 }
 
 module_init(simplepf_init);
