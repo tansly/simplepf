@@ -18,16 +18,65 @@
 
 #include <linux/kernel.h>
 #include <linux/module.h>
+#include <linux/netfilter.h>
+#include <linux/netfilter_ipv4.h>
+
+static unsigned int simplepf_hook_local_in(void *priv,
+		struct sk_buff *skb,
+		const struct nf_hook_state *state)
+{
+	return NF_DROP;
+}
+
+static unsigned int simplepf_hook_local_out(void *priv,
+		struct sk_buff *skb,
+		const struct nf_hook_state *state)
+{
+	return NF_DROP;
+}
+
+static struct nf_hook_ops simplepf_ops_local_in = {
+	.hook = simplepf_hook_local_in,
+	/* struct net_device *dev, TODO: for what? */
+	/* void *priv, unused */
+	.pf = PF_INET,
+	.hooknum = NF_INET_LOCAL_IN,
+	.priority = NF_IP_PRI_FIRST
+};
+
+static struct nf_hook_ops simplepf_ops_local_out = {
+	.hook = simplepf_hook_local_out,
+	/* struct net_device *dev, TODO: for what? */
+	/* void *priv, unused */
+	.pf = PF_INET,
+	.hooknum = NF_INET_LOCAL_OUT,
+	.priority = NF_IP_PRI_FIRST
+};
 
 static int __init simplepf_init(void)
 {
-	pr_info("Hello: Module loaded at 0x%p\n", simplepf_init);
+	int err;
+
+	err = nf_register_net_hook(&init_net, &simplepf_ops_local_in);
+	if (err)
+		goto register_in_fail;
+
+	err = nf_register_net_hook(&init_net, &simplepf_ops_local_out);
+	if (err)
+		goto register_out_fail;
+
 	return 0;
+
+register_out_fail:
+	nf_unregister_net_hook(&init_net, &simplepf_ops_local_in);
+register_in_fail:
+	return err;
 }
 
 static void __exit simplepf_exit(void)
 {
-	pr_info("Bye: Module unloaded from 0x%p\n", simplepf_exit);
+	nf_unregister_net_hook(&init_net, &simplepf_ops_local_in);
+	nf_unregister_net_hook(&init_net, &simplepf_ops_local_out);
 }
 
 module_init(simplepf_init);
