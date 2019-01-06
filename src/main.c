@@ -16,15 +16,27 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "chains.h"
+
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/netfilter.h>
 #include <linux/netfilter_ipv4.h>
+#include <linux/skbuff.h>
+#include <linux/ip.h>
+#include <linux/icmp.h>
+#include <linux/tcp.h>
+#include <linux/udp.h>
+#include <linux/inet.h>
 
 static unsigned int hook_local_in(void *priv,
 		struct sk_buff *skb,
 		const struct nf_hook_state *state)
 {
+	if (!skb) {
+		return NF_ACCEPT;
+	}
+
 	return NF_DROP;
 }
 

@@ -1,5 +1,5 @@
 obj-m := simplepf.o 
-simplepf-objs := main.o
+simplepf-objs := main.o chains.o
 
 KDIR  := /lib/modules/$(shell uname -r)/build
 PWD   := $(shell pwd)
