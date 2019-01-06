@@ -36,7 +36,8 @@
 struct chain_node {
 	/*
 	 * TODO: Reconsider the types.
-	 * TODO: We're wasting space with this scheme. Can we find a better way
+	 *
+	 * XXX: We're wasting space with this scheme. Can we find a better way
 	 * for checking the filter options?
 	 */
 
@@ -87,7 +88,7 @@ enum simplepf_action simplepf_traverse_chain(enum simplepf_chain_id chain_id,
 
 	if (chain_id >= __SIMPLEPF_CHAIN_LAST) {
 		/*
-		 * XXX: This should not be possible. The caller will
+		 * This should not be possible. The caller will
 		 * be us (the module), so the chain id is not an arbitrary input.
 		 * So this case indicates a programming error.
 		 */

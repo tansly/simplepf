@@ -16,6 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "uapi/simplepf.h"
 #include "chains.h"
 
 #include <linux/kernel.h>
@@ -23,28 +24,44 @@
 #include <linux/netfilter.h>
 #include <linux/netfilter_ipv4.h>
 #include <linux/skbuff.h>
-#include <linux/ip.h>
-#include <linux/icmp.h>
-#include <linux/tcp.h>
-#include <linux/udp.h>
-#include <linux/inet.h>
+#include <linux/socket.h>
+
+/*
+ * Following hooks check the validity of skb and if valid, passes them to
+ * simplepf_traverse_chain. They translate the simplepf action they get from the
+ * chain traversal to a NF action.
+ * If skb is not valid, chain traversal is not invoked and a NF_ACCEPT is returned
+ * immediately.
+ */
 
 static unsigned int hook_local_in(void *priv,
 		struct sk_buff *skb,
 		const struct nf_hook_state *state)
 {
+	enum simplepf_action action;
+
 	if (!skb) {
 		return NF_ACCEPT;
 	}
 
-	return NF_DROP;
+	action = simplepf_traverse_chain(SIMPLEPF_CHAIN_INPUT, skb, state);
+
+	return simplepf_to_nf(action);
 }
 
 static unsigned int hook_local_out(void *priv,
 		struct sk_buff *skb,
 		const struct nf_hook_state *state)
 {
-	return NF_DROP;
+	enum simplepf_action action;
+
+	if (!skb) {
+		return NF_ACCEPT;
+	}
+
+	action = simplepf_traverse_chain(SIMPLEPF_CHAIN_OUTPUT, skb, state);
+
+	return simplepf_to_nf(action);
 }
 
 static struct nf_hook_ops ops_local_in = {

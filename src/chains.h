@@ -25,6 +25,23 @@
 #include <linux/netfilter.h>
 
 /*
+ * TODO: Consider finding a better place to define this function.
+ */
+static inline int simplepf_to_nf(enum simplepf_action action)
+{
+	switch (action) {
+	case SIMPLEPF_ACTION_ACCEPT:
+		return NF_ACCEPT;
+	case SIMPLEPF_ACTION_DROP:
+		return NF_DROP;
+	default:
+		printk(KERN_DEBUG "simplepf: Action id (=%d) out of range. "
+				"Accepting packet. This may be a bug", action);
+		return NF_ACCEPT;
+	}
+}
+
+/*
  * Traverses a chain, returns the action determined by the chain.
  * @skb and @state are the pointers that are passed by netfilter to our hook.
  * Validity of skb (!= NULL) is checked by the hook; so this function assumes
