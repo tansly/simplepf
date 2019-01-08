@@ -63,6 +63,19 @@ static enum simplepf_action default_actions[__SIMPLEPF_CHAIN_LAST] = {
 };
 
 /*
+ * Tries to match the given rule with sk_buff.
+ * If match is successful, returns the action specified in the rule.
+ * Else, returns __SIMPLEPF_ACTION_LAST.
+ * XXX: Do we need the hook state?
+ */
+static enum simplepf_action match_rule(const struct simplepf_rule *rule,
+		const struct sk_buff *skb,
+		const struct nf_hook_state *state)
+{
+	return __SIMPLEPF_ACTION_LAST; // TODO
+}
+
+/*
  * XXX: We do not handle concurrent mutators yet.
  */
 int simplepf_add_rule(enum simplepf_chain_id chain_id,
@@ -113,6 +126,7 @@ enum simplepf_action simplepf_traverse_chain(enum simplepf_chain_id chain_id,
 		const struct nf_hook_state *state)
 {
 	struct list_head *chain;
+	struct chain_node *node;
 
 	if (chain_id >= __SIMPLEPF_CHAIN_LAST) {
 		/*
@@ -132,5 +146,15 @@ enum simplepf_action simplepf_traverse_chain(enum simplepf_chain_id chain_id,
 		return default_actions[chain_id];
 	}
 
+	rcu_read_lock();
+	list_for_each_entry_rcu(node, chain, list) {
+		enum simplepf_action action;
+		action = match_rule(&node->rule, skb, state);
+		if (action != __SIMPLEPF_ACTION_LAST) {
+			rcu_read_unlock();
+			return action;
+		}
+	}
+	rcu_read_unlock();
 	return default_actions[chain_id];
 }
