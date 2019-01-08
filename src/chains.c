@@ -30,14 +30,20 @@
 #include <linux/netfilter.h>
 #include <linux/list.h>
 #include <linux/rculist.h>
+#include <linux/slab.h>
 
 struct chain_node {
-	struct list_head node;
+	struct list_head list;
 	struct simplepf_rule rule;
 };
 
 /*
- * Chains are RCU protected linked lists.
+ * Chains are RCU-protected linked lists.
+ * Read mostly in chain traversals by netfilter hooks,
+ * written rarely for update requests by userspace.
+ * TODO: Consider parallel writers. If there may be parallel writers,
+ * we'll need an additional synchronization mechanism to serialize them,
+ * such as a spinlock.
  */
 static LIST_HEAD(input_chain);
 static LIST_HEAD(output_chain);
@@ -48,13 +54,55 @@ static struct list_head *chains[__SIMPLEPF_CHAIN_LAST] = {
 };
 
 /*
- * TODO: Default actions are ACCEPT for the time being.
- * These will be set by userspace in the future.
+ * TODO: Default actions may be set by userspace in the future.
+ * Just ACCEPT by default for the time being.
  */
 static enum simplepf_action default_actions[__SIMPLEPF_CHAIN_LAST] = {
 	[SIMPLEPF_CHAIN_INPUT] = SIMPLEPF_ACTION_ACCEPT,
 	[SIMPLEPF_CHAIN_OUTPUT] = SIMPLEPF_ACTION_ACCEPT,
 };
+
+/*
+ * XXX: We do not handle concurrent mutators yet.
+ */
+int simplepf_add_rule(enum simplepf_chain_id chain_id,
+		const struct simplepf_rule *rule)
+{
+	struct list_head *chain;
+	struct chain_node *new;
+
+	if (chain_id >= __SIMPLEPF_CHAIN_LAST) {
+		return -EINVAL;
+	}
+
+	new = kmalloc(sizeof *new, GFP_KERNEL);
+	if (!new) {
+		return -ENOMEM;
+	}
+	new->rule = *rule;
+
+	/*
+	 * XXX: chain_id will be an arbitrary input from userspace.
+	 * Should we use nospec stuff here (Spectre mitigations)?
+	 */
+	chain = chains[chain_id];
+
+	/*
+	 * From rculist.h:
+	 * The caller must take whatever precautions are necessary
+	 * (such as holding appropriate locks) to avoid racing
+	 * with another list-mutation primitive, such as list_add_tail_rcu()
+	 * or list_del_rcu(), running on this same list.
+	 * However, it is perfectly legal to run concurrently with
+	 * the _rcu list-traversal primitives, such as
+	 * list_for_each_entry_rcu().
+	 *
+	 * TODO: Synchronization among mutators
+	 */
+	list_add_tail_rcu(&new->list, chain);
+
+	return 0;
+}
 
 /*
  * TODO: Implement actual chain traversal.

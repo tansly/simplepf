@@ -37,6 +37,17 @@ enum simplepf_action simplepf_traverse_chain(enum simplepf_chain_id chain_id,
 		const struct nf_hook_state *state);
 
 /*
+ * Add (append) the given rule to the chain with the given ID.
+ * Returns 0 on success.
+ * Returns -EINVAL if chain_id does not specify a valid chain.
+ * Returns -ENOMEM on memory allocation failure.
+ * Handles the synchronization among concurrent readers/writers;
+ * safe to call concurrently. XXX: Not yet for multiple mutators.
+ */
+int simplepf_add_rule(enum simplepf_chain_id chain_id,
+		const struct simplepf_rule *rule);
+
+/*
  * TODO: Consider finding a better place to define this function.
  */
 static inline int simplepf_to_nf(enum simplepf_action action)
