@@ -28,12 +28,12 @@
 #include <linux/inet.h>
 #include <linux/skbuff.h>
 #include <linux/netfilter.h>
+#include <linux/list.h>
+#include <linux/rculist.h>
 
-/*
- * TODO: This will be a list that will be filled by input from userspace.
- * Most likely we'll need to use a synchronization mechanism like RCU.
- */
-struct chain_node {
+struct simplepf_chain_node {
+	struct list_head node;
+
 	/*
 	 * TODO: Reconsider the types.
 	 *
@@ -60,20 +60,23 @@ struct chain_node {
 };
 
 /*
+ * Chains are RCU protected linked lists.
+ */
+static LIST_HEAD(input_chain);
+static LIST_HEAD(output_chain);
+
+static struct list_head *chains[__SIMPLEPF_CHAIN_LAST] = {
+	[SIMPLEPF_CHAIN_INPUT] = &input_chain,
+	[SIMPLEPF_CHAIN_OUTPUT] = &output_chain
+};
+
+/*
  * TODO: Default actions are ACCEPT for the time being.
  * These will be set by userspace in the future.
  */
 static enum simplepf_action default_actions[__SIMPLEPF_CHAIN_LAST] = {
 	[SIMPLEPF_CHAIN_INPUT] = SIMPLEPF_ACTION_ACCEPT,
 	[SIMPLEPF_CHAIN_OUTPUT] = SIMPLEPF_ACTION_ACCEPT,
-};
-
-/*
- * TODO: Fill this array.
- */
-static struct simplepf_chain_node *chains[__SIMPLEPF_CHAIN_LAST] = {
-	[SIMPLEPF_CHAIN_INPUT] = NULL,
-	[SIMPLEPF_CHAIN_OUTPUT] = NULL
 };
 
 /*
@@ -84,7 +87,7 @@ enum simplepf_action simplepf_traverse_chain(enum simplepf_chain_id chain_id,
 		const struct sk_buff *skb,
 		const struct nf_hook_state *state)
 {
-	struct simplepf_chain_node *chain;
+	struct list_head *chain;
 
 	if (chain_id >= __SIMPLEPF_CHAIN_LAST) {
 		/*
