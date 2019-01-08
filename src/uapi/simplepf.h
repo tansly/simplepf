@@ -19,16 +19,43 @@
 #ifndef _SIMPLEPF_SIMPLEPF_H
 #define _SIMPLEPF_SIMPLEPF_H
 
+enum simplepf_action {
+	SIMPLEPF_ACTION_ACCEPT,
+	SIMPLEPF_ACTION_DROP,
+	__SIMPLEPF_ACTION_LAST
+};
+
 enum simplepf_chain_id {
 	SIMPLEPF_CHAIN_INPUT = 0,
 	SIMPLEPF_CHAIN_OUTPUT,
 	__SIMPLEPF_CHAIN_LAST
 };
 
-enum simplepf_action {
-	SIMPLEPF_ACTION_ACCEPT,
-	SIMPLEPF_ACTION_DROP,
-	__SIMPLEPF_ACTION_LAST
+/*
+ * Rule descriptor struct. This struct is what will be filled by userspace.
+ * Each chain node will store one rule descriptor.
+ * Fields that are used to match packets will be provided in network byte order.
+ */
+struct simplepf_rule {
+	/*
+	 * TODO: Reconsider the types.
+	 */
+	int filter_saddr;
+	int ip_saddr;
+
+	int filter_daddr;
+	int ip_daddr;
+
+	int filter_proto;
+	int ip_protocol;
+
+	int filter_sport;
+	int transport_sport;
+
+	int filter_dport;
+	int transport_dport;
+
+	enum simplepf_action action;
 };
 
 #endif	/* _SIMPLEPF_SIMPLEPF_H */

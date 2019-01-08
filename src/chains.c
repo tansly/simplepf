@@ -31,32 +31,9 @@
 #include <linux/list.h>
 #include <linux/rculist.h>
 
-struct simplepf_chain_node {
+struct chain_node {
 	struct list_head node;
-
-	/*
-	 * TODO: Reconsider the types.
-	 *
-	 * XXX: We're wasting space with this scheme. Can we find a better way
-	 * for checking the filter options?
-	 */
-
-	int filter_saddr;
-	int ip_saddr;
-
-	int filter_daddr;
-	int ip_daddr;
-
-	int filter_proto;
-	int ip_protocol;
-
-	int filter_sport;
-	int transport_sport;
-
-	int filter_dport;
-	int transport_dport;
-
-	enum simplepf_action action;
+	struct simplepf_rule rule;
 };
 
 /*

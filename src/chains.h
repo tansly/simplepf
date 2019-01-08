@@ -25,6 +25,18 @@
 #include <linux/netfilter.h>
 
 /*
+ * Traverses a chain, returns the action determined by the chain.
+ * @skb and @state are the pointers that are passed by netfilter to our hook.
+ * Validity of skb (!= NULL) is checked by the hook; so this function assumes
+ * that it is non-null.
+ * @chain_id is the id of the chain to be traversed.
+ * Returns a simplepf action.
+ */
+enum simplepf_action simplepf_traverse_chain(enum simplepf_chain_id chain_id,
+		const struct sk_buff *skb,
+		const struct nf_hook_state *state);
+
+/*
  * TODO: Consider finding a better place to define this function.
  */
 static inline int simplepf_to_nf(enum simplepf_action action)
@@ -40,17 +52,5 @@ static inline int simplepf_to_nf(enum simplepf_action action)
 		return NF_ACCEPT;
 	}
 }
-
-/*
- * Traverses a chain, returns the action determined by the chain.
- * @skb and @state are the pointers that are passed by netfilter to our hook.
- * Validity of skb (!= NULL) is checked by the hook; so this function assumes
- * that it is non-null.
- * @chain_id is the id of the chain to be traversed.
- * Returns a simplepf action.
- */
-enum simplepf_action simplepf_traverse_chain(enum simplepf_chain_id chain_id,
-		const struct sk_buff *skb,
-		const struct nf_hook_state *state);
 
 #endif	/* _SIMPLEPF_CHAINS_H */
