@@ -31,6 +31,7 @@
  * that it is non-null.
  * @chain_id is the id of the chain to be traversed.
  * Returns a simplepf action.
+ * XXX: Do we need the hook state?
  */
 enum simplepf_action simplepf_traverse_chain(enum simplepf_chain_id chain_id,
 		const struct sk_buff *skb,

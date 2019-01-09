@@ -117,10 +117,6 @@ int simplepf_add_rule(enum simplepf_chain_id chain_id,
 	return 0;
 }
 
-/*
- * TODO: Implement actual chain traversal.
- * Obviously the chain must be set up first.
- */
 enum simplepf_action simplepf_traverse_chain(enum simplepf_chain_id chain_id,
 		const struct sk_buff *skb,
 		const struct nf_hook_state *state)
