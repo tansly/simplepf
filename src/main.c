@@ -106,6 +106,10 @@ static void __exit simplepf_exit(void)
 {
 	nf_unregister_net_hook(&init_net, &ops_local_in);
 	nf_unregister_net_hook(&init_net, &ops_local_out);
+	/*
+	 * TODO: Free the memory allocated for the chains.
+	 * TODO: Read rcubarrier.txt (RCU and Unloadable Modules)
+	 */
 }
 
 module_init(simplepf_init);
