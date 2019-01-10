@@ -26,6 +26,46 @@
 #include <linux/skbuff.h>
 #include <linux/socket.h>
 
+#ifdef SIMPLEPF_TEST
+#include <linux/string.h>
+
+static void add_test_rules(void)
+{
+	int err;
+	struct simplepf_rule rule;
+	memset(&rule, 0, sizeof rule);
+
+	rule.action = SIMPLEPF_ACTION_DROP;
+	rule.filter_proto = true;
+	rule.ip_protocol = IPPROTO_ICMP;
+	err = simplepf_add_rule(SIMPLEPF_CHAIN_INPUT, &rule);
+	if (err) {
+		printk(KERN_DEBUG "simplepf: Failed to add rule (%d)\n", err);
+	}
+
+	memset(&rule, 0, sizeof rule);
+	rule.action = SIMPLEPF_ACTION_DROP;
+	rule.filter_proto = true;
+	rule.ip_protocol = IPPROTO_ICMP;
+	err = simplepf_add_rule(SIMPLEPF_CHAIN_OUTPUT, &rule);
+	if (err) {
+		printk(KERN_DEBUG "simplepf: Failed to add rule (%d)\n", err);
+	}
+
+	memset(&rule, 0, sizeof rule);
+	rule.action = SIMPLEPF_ACTION_DROP;
+	rule.filter_proto = true;
+	rule.ip_protocol = IPPROTO_TCP;
+	rule.filter_dport = htons(443);
+	rule.transport_dport = htons(443);
+	err = simplepf_add_rule(SIMPLEPF_CHAIN_OUTPUT, &rule);
+	if (err) {
+		printk(KERN_DEBUG "simplepf: Failed to add rule (%d)\n", err);
+	}
+}
+
+#endif /* SIMPLEPF_TEST */
+
 /*
  * Following hooks check the validity of skb and if valid, passes them to
  * simplepf_traverse_chain. They translate the simplepf action they get from the
@@ -93,6 +133,10 @@ static int __init simplepf_init(void)
 	err = nf_register_net_hook(&init_net, &ops_local_out);
 	if (err)
 		goto register_out_fail;
+
+#ifdef SIMPLEPF_TEST
+	add_test_rules();
+#endif /* SIMPLEPF_TEST */
 
 	return 0;
 
