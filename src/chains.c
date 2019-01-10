@@ -64,6 +64,7 @@ static enum simplepf_action default_actions[__SIMPLEPF_CHAIN_LAST] = {
 
 /*
  * Tries to match the given rule with sk_buff.
+ * Will always be given non-null parameters.
  * If match is successful, returns the action specified in the rule.
  * Else, returns __SIMPLEPF_ACTION_LAST.
  * XXX: Do we need the hook state?
@@ -72,7 +73,74 @@ static enum simplepf_action match_rule(const struct simplepf_rule *rule,
 		const struct sk_buff *skb,
 		const struct nf_hook_state *state)
 {
-	return __SIMPLEPF_ACTION_LAST; // TODO
+	struct iphdr *ip_header = ip_hdr(skb);
+
+	if (rule->filter_saddr && rule->ip_saddr != ip_header->saddr) {
+		return __SIMPLEPF_ACTION_LAST;
+	}
+
+	if (rule->filter_daddr && rule->ip_daddr != ip_header->daddr) {
+		return __SIMPLEPF_ACTION_LAST;
+	}
+
+	if (rule->filter_proto && rule->ip_protocol != ip_header->protocol) {
+		return __SIMPLEPF_ACTION_LAST;
+	}
+
+	switch (ip_header->protocol) {
+	case IPPROTO_ICMP:
+	{
+		struct icmphdr *icmp_header = icmp_hdr(skb);
+		if (rule->filter_icmp_type &&
+				rule->icmp_type != icmp_header->type) {
+			return __SIMPLEPF_ACTION_LAST;
+		}
+	}
+	break;
+
+	case IPPROTO_TCP:
+	{
+		struct tcphdr *tcp_header = tcp_hdr(skb);
+		if (rule->filter_sport &&
+				rule->transport_sport != tcp_header->source) {
+			return __SIMPLEPF_ACTION_LAST;
+		}
+		if (rule->filter_dport &&
+				rule->transport_dport != tcp_header->dest) {
+			return __SIMPLEPF_ACTION_LAST;
+		}
+	}
+
+	case IPPROTO_UDP:
+	{
+		struct tcphdr *tcp_header = tcp_hdr(skb);
+		if (rule->filter_sport &&
+				rule->transport_sport != tcp_header->source) {
+			return __SIMPLEPF_ACTION_LAST;
+		}
+		if (rule->filter_dport &&
+				rule->transport_dport != tcp_header->dest) {
+			return __SIMPLEPF_ACTION_LAST;
+		}
+
+	}
+	break;
+
+	/*
+	 * Not matched any of the protocols we support.
+	 * Let the packet pass.
+	 */
+	default:
+	return __SIMPLEPF_ACTION_LAST;
+
+	}
+
+	/*
+	 * If we've come to this point, every filter that has its filter_*
+	 * set to true has matched the packet. Note that this may also mean
+	 * that no filter_* was set to true, i.e. this rule matches all packets.
+	 */
+	return rule->action;
 }
 
 /*

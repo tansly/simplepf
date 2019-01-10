@@ -19,6 +19,8 @@
 #ifndef _SIMPLEPF_SIMPLEPF_H
 #define _SIMPLEPF_SIMPLEPF_H
 
+#include <linux/types.h>
+
 enum simplepf_action {
 	SIMPLEPF_ACTION_ACCEPT,
 	SIMPLEPF_ACTION_DROP,
@@ -35,25 +37,39 @@ enum simplepf_chain_id {
  * Rule descriptor struct. This struct is what will be filled by userspace.
  * Each chain node will store one rule descriptor.
  * Fields that are used to match packets will be provided in network byte order.
+ *
+ * Fields are interpreted as follows:
+ *  filter_* signify that if the rule will filter according to the following field.
+ *  For example, if filter_saddr is true, the rule filters by the source addr,
+ *  i.e. only matches packets with hdr->saddr == rule->ip_saddr.
+ *  If all of the fields that has its respective filter_* field set to true
+ *  match the incoming packet, we consider it a match. Otherwise, i.e. if any
+ *  of the fields do not match, there is no match and we skip the rule.
+ *  Think of it as a "logical and" operation.
+ *
+ * Note that if none of the filter_* are set, the rule matches ALL packets.
+ *  TODO: Think of alignment/padding issues.
+ *  XXX: We should not let anyone set port numbers for ICMP filters or
+ *  ICMP types for UDP/TCP filters.
  */
 struct simplepf_rule {
-	/*
-	 * TODO: Reconsider the types.
-	 */
-	int filter_saddr;
-	int ip_saddr;
+	bool filter_saddr;
+	u32 ip_saddr;
 
-	int filter_daddr;
-	int ip_daddr;
+	bool filter_daddr;
+	u32 ip_daddr;
 
-	int filter_proto;
-	int ip_protocol;
+	bool filter_proto;
+	u8 ip_protocol;
 
-	int filter_sport;
-	int transport_sport;
+	bool filter_icmp_type;
+	u8 icmp_type;
 
-	int filter_dport;
-	int transport_dport;
+	bool filter_sport;
+	u16 transport_sport;
+
+	bool filter_dport;
+	u16 transport_dport;
 
 	enum simplepf_action action;
 };
