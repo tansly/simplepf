@@ -106,10 +106,30 @@ static void __exit simplepf_exit(void)
 {
 	nf_unregister_net_hook(&init_net, &ops_local_in);
 	nf_unregister_net_hook(&init_net, &ops_local_out);
+
 	/*
-	 * TODO: Free the memory allocated for the chains.
-	 * TODO: Read rcubarrier.txt (RCU and Unloadable Modules)
+	 * At this point, we would (hopefully) have stopped new hook calls
+	 * and also any new updates (by disabling whatever communication
+	 * mechanism we use to communicate with the userspace).
+	 *
+	 * We don't need to check the return value of the following calls.
+	 * The only error they can return is EINVAL if the given chain id is
+	 * invalid. We are providing hardcoded id's that we know are valid.
+	 * The check is only required for cases where the id may be arbitrary
+	 * input from userspace.
 	 */
+	simplepf_flush_chain(SIMPLEPF_CHAIN_INPUT);
+	simplepf_flush_chain(SIMPLEPF_CHAIN_OUTPUT);
+
+	/*
+	 * Chains are RCU-protected. Make sure all RCU callbacks are fired
+	 * before unloading the module.
+	 *
+	 * Even though we're not using RCU callbacks, in which case this may be
+	 * unnecessary, still do this just to be safe. We may need it in the
+	 * future, who knows?
+	 */
+	rcu_barrier();
 }
 
 module_init(simplepf_init);

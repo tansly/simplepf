@@ -143,9 +143,6 @@ static enum simplepf_action match_rule(const struct simplepf_rule *rule,
 	return rule->action;
 }
 
-/*
- * XXX: We do not handle concurrent mutators yet.
- */
 int simplepf_add_rule(enum simplepf_chain_id chain_id,
 		const struct simplepf_rule *rule)
 {
@@ -178,9 +175,32 @@ int simplepf_add_rule(enum simplepf_chain_id chain_id,
 	 * the _rcu list-traversal primitives, such as
 	 * list_for_each_entry_rcu().
 	 *
-	 * TODO: Synchronization among mutators
+	 * TODO: Acquire writer lock.
 	 */
 	list_add_tail_rcu(&new->list, chain);
+
+	return 0;
+}
+
+int simplepf_flush_chain(enum simplepf_chain_id chain_id)
+{
+	struct list_head *chain;
+	struct chain_node *node;
+	struct chain_node *n;
+
+	if (chain_id >= __SIMPLEPF_CHAIN_LAST) {
+		return -EINVAL;
+	}
+
+	chain = chains[chain_id];
+	/*
+	 * TODO: Acquire writer lock.
+	 */
+	list_for_each_entry_safe(node, n, chain, list) {
+		list_del_rcu(&node->list);
+		synchronize_rcu();
+		kfree(node);
+	}
 
 	return 0;
 }
@@ -194,9 +214,9 @@ enum simplepf_action simplepf_traverse_chain(enum simplepf_chain_id chain_id,
 
 	if (chain_id >= __SIMPLEPF_CHAIN_LAST) {
 		/*
-		 * This should not be possible. The caller will
-		 * be us (the module), so the chain id is not an arbitrary input.
-		 * So this case indicates a programming error.
+		 * This should not be possible. We (the module) provide a
+		 * hardcoded chain id, so the chain id is not an arbitrary input.
+		 * This may indicate a programming error.
 		 */
 		printk(KERN_DEBUG "simplepf: Chain id (=%d) out of range. "
 				"Accepting packet. "

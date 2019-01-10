@@ -25,6 +25,13 @@
 #include <linux/netfilter.h>
 
 /*
+ * Flush the chain with the given id. Frees allocated resources as well.
+ * Returns 0 on success.
+ * Returns -EINVAL if chain_id does not specify a valid chain.
+ */
+int simplepf_flush_chain(enum simplepf_chain_id chain_id);
+
+/*
  * Traverses a chain, returns the action determined by the chain.
  * @skb and @state are the pointers that are passed by netfilter to our hook.
  * Validity of skb (!= NULL) is checked by the hook; so this function assumes
