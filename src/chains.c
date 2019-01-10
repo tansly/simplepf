@@ -205,11 +205,6 @@ enum simplepf_action simplepf_traverse_chain(enum simplepf_chain_id chain_id,
 	}
 
 	chain = chains[chain_id];
-
-	if (!chain) {
-		return default_actions[chain_id];
-	}
-
 	rcu_read_lock();
 	list_for_each_entry_rcu(node, chain, list) {
 		enum simplepf_action action;
