@@ -31,6 +31,7 @@
 #include <linux/list.h>
 #include <linux/rculist.h>
 #include <linux/slab.h>
+#include <linux/mutex.h>
 
 struct chain_node {
 	struct list_head list;
@@ -41,9 +42,6 @@ struct chain_node {
  * Chains are RCU-protected linked lists.
  * Read mostly in chain traversals by netfilter hooks,
  * written rarely for update requests by userspace.
- * TODO: Consider parallel writers. If there may be parallel writers,
- * we'll need an additional synchronization mechanism to serialize them,
- * such as a spinlock.
  */
 static LIST_HEAD(input_chain);
 static LIST_HEAD(output_chain);
@@ -51,6 +49,17 @@ static LIST_HEAD(output_chain);
 static struct list_head *chains[__SIMPLEPF_CHAIN_LAST] = {
 	[SIMPLEPF_CHAIN_INPUT] = &input_chain,
 	[SIMPLEPF_CHAIN_OUTPUT] = &output_chain
+};
+
+/*
+ * Mutexes to protect the chains.
+ */
+static DEFINE_MUTEX(input_chain_mutex);
+static DEFINE_MUTEX(output_chain_mutex);
+
+static struct mutex *chain_mutexes[__SIMPLEPF_CHAIN_LAST] = {
+	[SIMPLEPF_CHAIN_INPUT] = &input_chain_mutex,
+	[SIMPLEPF_CHAIN_OUTPUT] = &output_chain_mutex,
 };
 
 /*
@@ -165,19 +174,9 @@ int simplepf_add_rule(enum simplepf_chain_id chain_id,
 	 */
 	chain = chains[chain_id];
 
-	/*
-	 * From rculist.h:
-	 * The caller must take whatever precautions are necessary
-	 * (such as holding appropriate locks) to avoid racing
-	 * with another list-mutation primitive, such as list_add_tail_rcu()
-	 * or list_del_rcu(), running on this same list.
-	 * However, it is perfectly legal to run concurrently with
-	 * the _rcu list-traversal primitives, such as
-	 * list_for_each_entry_rcu().
-	 *
-	 * TODO: Acquire writer lock.
-	 */
+	mutex_lock(chain_mutexes[chain_id]);
 	list_add_tail_rcu(&new->list, chain);
+	mutex_unlock(chain_mutexes[chain_id]);
 
 	return 0;
 }
@@ -193,14 +192,13 @@ int simplepf_flush_chain(enum simplepf_chain_id chain_id)
 	}
 
 	chain = chains[chain_id];
-	/*
-	 * TODO: Acquire writer lock.
-	 */
+	mutex_lock(chain_mutexes[chain_id]);
 	list_for_each_entry_safe(node, n, chain, list) {
 		list_del_rcu(&node->list);
 		synchronize_rcu();
 		kfree(node);
 	}
+	mutex_unlock(chain_mutexes[chain_id]);
 
 	return 0;
 }
