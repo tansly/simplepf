@@ -25,6 +25,7 @@
 #include <linux/netfilter_ipv4.h>
 #include <linux/skbuff.h>
 #include <linux/socket.h>
+#include <linux/proc_fs.h>
 
 /*
  * Following hooks check the validity of skb and if valid, passes them to
@@ -82,6 +83,21 @@ static struct nf_hook_ops ops_local_out = {
 	.priority = NF_IP_PRI_FIRST
 };
 
+/*
+ * /proc/simplepf/ directory.
+ */
+static struct proc_dir_entry *proc_dir;
+/*
+ * /proc/simplepf/rules file.
+ * User writes a simplepf_cmd struct to this file to manipulate the chains.
+ * TODO: Define the commands and document them.
+ * TODO: What to do on read? How to present existing rules to user?
+ */
+static struct proc_dir_entry *proc_rules;
+static struct file_operations rules_fops = {
+
+};
+
 static int __init simplepf_init(void)
 {
 	int err;
@@ -98,8 +114,26 @@ static int __init simplepf_init(void)
 		goto register_out_fail;
 	}
 
+	proc_dir = proc_mkdir("simplepf", NULL);
+	if (!proc_dir) {
+		err = -ENOMEM;
+		printk(KERN_INFO "simplepf: Failed to create /proc/simplepf\n");
+		goto proc_dir_fail;
+	}
+
+	proc_rules = proc_create("rules", 0600, proc_dir, &rules_fops);
+	if (!proc_rules) {
+		err = -ENOMEM;
+		printk(KERN_INFO "simplepf: Failed to create /proc/simplepf/rules\n");
+		goto proc_rules_fail;
+	}
+
 	return 0;
 
+proc_rules_fail:
+	proc_remove(proc_dir);
+proc_dir_fail:
+	nf_unregister_net_hook(&init_net, &ops_local_out);
 register_out_fail:
 	nf_unregister_net_hook(&init_net, &ops_local_in);
 register_in_fail:
@@ -110,6 +144,9 @@ static void __exit simplepf_exit(void)
 {
 	nf_unregister_net_hook(&init_net, &ops_local_in);
 	nf_unregister_net_hook(&init_net, &ops_local_out);
+
+	proc_remove(proc_rules);
+	proc_remove(proc_dir);
 
 	/*
 	 * At this point, we would (hopefully) have stopped new hook calls
