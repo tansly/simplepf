@@ -119,16 +119,17 @@ static enum simplepf_action match_rule(const struct simplepf_rule *rule,
 			return __SIMPLEPF_ACTION_LAST;
 		}
 	}
+	break;
 
 	case IPPROTO_UDP:
 	{
-		struct tcphdr *tcp_header = tcp_hdr(skb);
+		struct udphdr *udp_header = udp_hdr(skb);
 		if (rule->filter_sport &&
-				rule->transport_sport != tcp_header->source) {
+				rule->transport_sport != udp_header->source) {
 			return __SIMPLEPF_ACTION_LAST;
 		}
 		if (rule->filter_dport &&
-				rule->transport_dport != tcp_header->dest) {
+				rule->transport_dport != udp_header->dest) {
 			return __SIMPLEPF_ACTION_LAST;
 		}
 
