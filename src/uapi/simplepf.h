@@ -74,4 +74,19 @@ struct simplepf_rule {
 	enum simplepf_action action;
 };
 
+/*
+ * TODO: Document the semantics of commands once the interface is stable.
+ */
+enum simplepf_cmd_type {
+	SIMPLEPF_CMD_ADD,
+	SIMPLEPF_CMD_FLUSH,
+	__SIMPLEPF_CMD_LAST
+};
+
+struct simplepf_cmd {
+	enum simplepf_cmd_type cmd_type;
+	enum simplepf_chain_id chain_id;
+	struct simplepf_rule rule;
+};
+
 #endif	/* _SIMPLEPF_SIMPLEPF_H */
