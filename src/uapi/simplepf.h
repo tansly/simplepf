@@ -84,7 +84,7 @@ enum simplepf_cmd_type {
 };
 
 struct simplepf_cmd {
-	enum simplepf_cmd_type cmd_type;
+	enum simplepf_cmd_type type;
 	enum simplepf_chain_id chain_id;
 	struct simplepf_rule rule;
 };

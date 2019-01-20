@@ -25,6 +25,59 @@
 #include <linux/proc_fs.h>
 
 /*
+ * @pos is not used in this implementation.
+ *
+ * Only a write of a full cmd struct (sizeof(struct simplepf_cmd)) is considered
+ * valid; -EINVAL is returned on invalid writes and no action is taken.
+ * -EINVAL is returned if cmd.type is invalid.
+ * -EFAULT  is returned if copy_from_user() fails.
+ * If the called chain operation (add, flush...) returns an error, this
+ * functions propagates that error.
+ */
+static ssize_t rules_write(struct file *filp, const char __user *buf,
+		size_t nbytes, loff_t *pos)
+{
+	struct simplepf_cmd cmd;
+
+	if (nbytes != sizeof cmd) {
+		return -EINVAL;
+	}
+
+	if (copy_from_user(&cmd, buf, sizeof cmd)) {
+		return -EFAULT;
+	}
+
+	switch (cmd.type) {
+	case SIMPLEPF_CMD_ADD:
+	{
+		int err = simplepf_add_rule(cmd.chain_id, &cmd.rule);
+		if (err) {
+			return err;
+		}
+	}
+	case SIMPLEPF_CMD_FLUSH:
+	{
+		int err = simplepf_flush_chain(cmd.chain_id);
+		if (err) {
+			return err;
+		}
+	}
+	default:
+		return -EINVAL;
+	}
+
+	/*
+	 * Success
+	 */
+	return nbytes;
+}
+
+static struct file_operations rules_fops = {
+	.owner = THIS_MODULE,
+	.write = rules_write
+};
+
+/*
  * /proc/simplepf/ directory.
  */
 static struct proc_dir_entry *proc_dir;
@@ -36,10 +89,6 @@ static struct proc_dir_entry *proc_dir;
  * TODO: What to do on read? How to present existing rules to user?
  */
 static struct proc_dir_entry *proc_rules;
-
-static struct file_operations rules_fops = {
-	.owner = THIS_MODULE,
-};
 
 int __init simplepf_proc_init(void)
 {
