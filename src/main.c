@@ -87,12 +87,16 @@ static int __init simplepf_init(void)
 	int err;
 
 	err = nf_register_net_hook(&init_net, &ops_local_in);
-	if (err)
+	if (err) {
+		printk(KERN_INFO "simplepf: Failed to register input hook\n");
 		goto register_in_fail;
+	}
 
 	err = nf_register_net_hook(&init_net, &ops_local_out);
-	if (err)
+	if (err) {
+		printk(KERN_INFO "simplepf: Failed to register output hook\n");
 		goto register_out_fail;
+	}
 
 	return 0;
 
