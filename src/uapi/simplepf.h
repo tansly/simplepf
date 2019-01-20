@@ -54,22 +54,22 @@ enum simplepf_chain_id {
  */
 struct simplepf_rule {
 	bool filter_saddr;
-	u32 ip_saddr;
+	__u32 ip_saddr;
 
 	bool filter_daddr;
-	u32 ip_daddr;
+	__u32 ip_daddr;
 
 	bool filter_proto;
-	u8 ip_protocol;
+	__u8 ip_protocol;
 
 	bool filter_icmp_type;
-	u8 icmp_type;
+	__u8 icmp_type;
 
 	bool filter_sport;
-	u16 transport_sport;
+	__u16 transport_sport;
 
 	bool filter_dport;
-	u16 transport_dport;
+	__u16 transport_dport;
 
 	enum simplepf_action action;
 };
