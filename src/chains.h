@@ -50,7 +50,7 @@ enum simplepf_action simplepf_traverse_chain(enum simplepf_chain_id chain_id,
  * Returns -EINVAL if chain_id does not specify a valid chain.
  * Returns -ENOMEM on memory allocation failure.
  * Handles the synchronization among concurrent readers/writers;
- * safe to call concurrently. XXX: Not yet for multiple mutators.
+ * safe to call concurrently.
  */
 int simplepf_add_rule(enum simplepf_chain_id chain_id,
 		const struct simplepf_rule *rule);
