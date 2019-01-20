@@ -108,6 +108,8 @@ int __init simplepf_proc_init(void)
 		goto proc_rules_fail;
 	}
 
+	return 0;
+
 proc_rules_fail:
 	proc_remove(proc_dir);
 proc_dir_fail:
