@@ -1,5 +1,5 @@
 obj-m := simplepf.o 
-simplepf-objs := main.o chains.o
+simplepf-objs := main.o chains.o proc.o
 
 KDIR  := ~/src/linux
 PWD   := $(shell pwd)
