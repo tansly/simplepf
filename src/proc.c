@@ -55,6 +55,8 @@ static ssize_t rules_write(struct file *filp, const char __user *buf,
 			return err;
 		}
 	}
+	break;
+
 	case SIMPLEPF_CMD_FLUSH:
 	{
 		int err = simplepf_flush_chain(cmd.chain_id);
@@ -62,6 +64,8 @@ static ssize_t rules_write(struct file *filp, const char __user *buf,
 			return err;
 		}
 	}
+	break;
+
 	default:
 		return -EINVAL;
 	}
