@@ -63,8 +63,7 @@ static struct mutex *chain_mutexes[__SIMPLEPF_CHAIN_LAST] = {
 };
 
 /*
- * TODO: Default actions may be set by userspace in the future.
- * Just ACCEPT by default for the time being.
+ * Accept by default.
  */
 static enum simplepf_action default_actions[__SIMPLEPF_CHAIN_LAST] = {
 	[SIMPLEPF_CHAIN_INPUT] = SIMPLEPF_ACTION_ACCEPT,

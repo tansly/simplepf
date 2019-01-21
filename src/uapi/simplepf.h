@@ -48,7 +48,6 @@ enum simplepf_chain_id {
  *  Think of it as a "logical and" operation.
  *
  * Note that if none of the filter_* are set, the rule matches ALL packets.
- *  TODO: Think of alignment/padding issues.
  *  XXX: We should not let anyone set port numbers for ICMP filters or
  *  ICMP types for UDP/TCP filters.
  */

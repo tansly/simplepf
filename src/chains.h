@@ -56,7 +56,9 @@ int simplepf_add_rule(enum simplepf_chain_id chain_id,
 		const struct simplepf_rule *rule);
 
 /*
- * TODO: Consider finding a better place to define this function.
+ * Convert a simplepf return value to a netfilter value.
+ * SIMPLEPF_ACTION_ACCEPT -> NF_ACCEPT
+ * SIMPLEPF_ACTION_DROP -> NF_DROP
  */
 static inline int simplepf_to_nf(enum simplepf_action action)
 {
