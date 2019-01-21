@@ -32,6 +32,7 @@
 #include <linux/rculist.h>
 #include <linux/slab.h>
 #include <linux/mutex.h>
+#include <linux/nospec.h>
 
 struct chain_node {
 	struct list_head list;
@@ -168,10 +169,7 @@ int simplepf_add_rule(enum simplepf_chain_id chain_id,
 	}
 	new->rule = *rule;
 
-	/*
-	 * XXX: chain_id will be an arbitrary input from userspace.
-	 * Should we use nospec stuff here (Spectre mitigations)?
-	 */
+	chain_id = array_index_nospec(chain_id, __SIMPLEPF_CHAIN_LAST);
 	chain = chains[chain_id];
 
 	mutex_lock(chain_mutexes[chain_id]);
@@ -191,7 +189,9 @@ int simplepf_flush_chain(enum simplepf_chain_id chain_id)
 		return -EINVAL;
 	}
 
+	chain_id = array_index_nospec(chain_id, __SIMPLEPF_CHAIN_LAST);
 	chain = chains[chain_id];
+
 	mutex_lock(chain_mutexes[chain_id]);
 	list_for_each_entry_safe(node, n, chain, list) {
 		list_del_rcu(&node->list);
@@ -222,7 +222,11 @@ enum simplepf_action simplepf_traverse_chain(enum simplepf_chain_id chain_id,
 		return SIMPLEPF_ACTION_ACCEPT;
 	}
 
+	/*
+	 * No Spectre stuff because we chain_id is not user input.
+	 */
 	chain = chains[chain_id];
+
 	rcu_read_lock();
 	list_for_each_entry_rcu(node, chain, list) {
 		enum simplepf_action action;
