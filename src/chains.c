@@ -223,7 +223,7 @@ enum simplepf_action simplepf_traverse_chain(enum simplepf_chain_id chain_id,
 	}
 
 	/*
-	 * No Spectre stuff because we chain_id is not user input.
+	 * No Spectre stuff because chain_id is not user input.
 	 */
 	chain = chains[chain_id];
 

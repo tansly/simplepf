@@ -74,8 +74,16 @@ struct simplepf_rule {
 };
 
 /*
- * TODO: Document the semantics of commands once the interface is stable.
+ * The firewall is configured by writing a struct simplepf_cmd to /proc/simplepf/rules.
+ * Only one command can be written at a time,
+ * use multiple writes for multiple commands.
+ * The following enum and struct are self explanatory.
+ * There are a few things to note, though:
+ * * Since currently only feasible way to use this module is with a default accept
+ *   policy, rules with an ACCEPT action do not make sense
+ * What else?
  */
+
 enum simplepf_cmd_type {
 	SIMPLEPF_CMD_ADD,
 	SIMPLEPF_CMD_FLUSH,
