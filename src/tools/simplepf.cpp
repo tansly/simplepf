@@ -193,9 +193,9 @@ int main(int argc, char **argv)
 		}
 
 		if (vm.count("dport")) {
-			cmd.rule.filter_sport = true;
+			cmd.rule.filter_dport = true;
 
-			cmd.rule.transport_sport = htons(vm["dport"].as<std::uint16_t>());
+			cmd.rule.transport_dport = htons(vm["dport"].as<std::uint16_t>());
 		}
 
 		if (vm.count("icmp_type")) {
