@@ -30,3 +30,6 @@ a range of ports and IP addresses in rules.
 * Filter traffic only in specified interfaces.
 * Log matched packets, of course without giving an attacker too much opportunities
 for a DoS attack.
+* Use something better than `procfs` for userspace communication.
+A netlink socket comes to mind but I don't yet know how to use it and I need to
+finish the homework part quick.
