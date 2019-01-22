@@ -1,7 +1,7 @@
 obj-m := simplepf.o 
 simplepf-objs := main.o chains.o proc.o
 
-KDIR  := ~/src/linux
+KDIR  := /lib/modules/$(shell uname -r)/build
 PWD   := $(shell pwd)
 
 default:
